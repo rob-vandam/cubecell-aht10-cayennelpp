@@ -90,7 +90,9 @@ static void prepareTxFrame( uint8_t port )
     appData[3] = 0x03;
  */
     CayenneLPP lpp(LORAWAN_APP_DATA_MAX_SIZE);
+    //temperature needs to be rounded at one decimal, otherwise all decimals will be strpped from output
     float temperature = roundf(AHT10.GetTemperature()*10)/10;
+    //humidity needs to be rounded to 0.5, otherwise the decimals will be stripped from output
     static signed char round5delta[5] = { 0, -1 ,-2, 2, 1};
     int hum = AHT10.GetHumidity()*10;
     float humidity = (hum + round5delta[hum%5])/10.0;

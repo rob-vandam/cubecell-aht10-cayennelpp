@@ -35,7 +35,7 @@ LoRaMacRegion_t loraWanRegion = ACTIVE_REGION;
 DeviceClass_t  loraWanClass = LORAWAN_CLASS;
 
 /*the application data transmission duty cycle.  value in [ms].*/
-uint32_t appTxDutyCycle = 1800000;
+uint32_t appTxDutyCycle = 1200000;
 
 /*OTAA or ABP*/
 bool overTheAirActivation = LORAWAN_NETMODE;
@@ -171,22 +171,3 @@ void loop()
 		}
 	}
 }
-
-/*
-void loop() {
-      float temperature = roundf(AHT10.GetTemperature()*10)/10;
-    static signed char round5delta[5] = { 0, -1 ,-2, 2, 1};
-    int hum = AHT10.GetHumidity()*10;
-    float humidity = (hum + round5delta[hum%5])/10.0;
-//  float temperature = AHT10.GetTemperature();
-//  float roundedtemp = roundf(temperature*10)/10;
-  // put your main code here, to run repeatedly:
-  //Serial.println("//Thinary Eletronic AHT10 Module//");
-  //Serial.println("https://thinaryelectronic.aliexpress.com");
-  Serial.println(String("")+"Humidity(%RH):\t\t"+humidity+"%");
-  Serial.println(String("")+"Temperature(℃):\t"+temperature+"℃");
-  Serial.println(String("")+"hum:\t"+hum+"%");
-  //Serial.println(String("")+"Dewpoint(℃):\t\t"+AHT10.GetDewPoint()+"℃");
-  delay(1500);
-}
-*/

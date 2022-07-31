@@ -76,13 +76,13 @@ uint8_t confirmedNbTrials = 4;
 /* Prepares the payload of the frame */
 static void prepareTxFrame( uint8_t port )
 {
-	/*appData size is LORAWAN_APP_DATA_MAX_SIZE which is defined in "commissioning.h".
-	*appDataSize max value is LORAWAN_APP_DATA_MAX_SIZE.
-	*if enabled AT, don't modify LORAWAN_APP_DATA_MAX_SIZE, it may cause system hanging or failure.
-	*if disabled AT, LORAWAN_APP_DATA_MAX_SIZE can be modified, the max value is reference to lorawan region and SF.
-	*for example, if use REGION_CN470, 
-	*the max value for different DR can be found in MaxPayloadOfDatarateCN470 refer to DataratesCN470 and BandwidthsCN470 in "RegionCN470.h".
-	*/
+  /*appData size is LORAWAN_APP_DATA_MAX_SIZE which is defined in "commissioning.h".
+  *appDataSize max value is LORAWAN_APP_DATA_MAX_SIZE.
+  *if enabled AT, don't modify LORAWAN_APP_DATA_MAX_SIZE, it may cause system hanging or failure.
+  *if disabled AT, LORAWAN_APP_DATA_MAX_SIZE can be modified, the max value is reference to lorawan region and SF.
+  *for example, if use REGION_CN470, 
+  *the max value for different DR can be found in MaxPayloadOfDatarateCN470 refer to DataratesCN470 and BandwidthsCN470 in "RegionCN470.h".
+  */
  /*   appDataSize = 4;
     appData[0] = 0x00;
     appData[1] = 0x01;
@@ -96,11 +96,17 @@ static void prepareTxFrame( uint8_t port )
     static signed char round5delta[5] = { 0, -1 ,-2, 2, 1};
     int hum = AHT10.GetHumidity()*10;
     float humidity = (hum + round5delta[hum%5])/10.0;
-    Serial.println(hum);
-    Serial.println(humidity);
-    Serial.println(AHT10.GetHumidity());
+    pinMode(VBAT_ADC_CTL,OUTPUT);
+    digitalWrite(VBAT_ADC_CTL,LOW);
+    float voltage = getBatteryVoltage()/1000.0;
+    pinMode(VBAT_ADC_CTL, INPUT);
+    //Serial.println(hum);
+    //Serial.println(humidity);
+    //Serial.println(AHT10.GetHumidity());
+    //Serial.println(voltage);
     lpp.addTemperature(1, temperature);
     lpp.addRelativeHumidity(2, humidity);
+    lpp.addAnalogInput(3, voltage);
     lpp.getBuffer(), 
     appDataSize = lpp.getSize();
     memcpy(appData,lpp.getBuffer(),appDataSize);
@@ -108,12 +114,12 @@ static void prepareTxFrame( uint8_t port )
 
 
 void setup() {
-	Serial.begin(9600);
+  Serial.begin(9600);
 #if(AT_SUPPORT)
-	enableAt();
+  enableAt();
 #endif
-	deviceState = DEVICE_STATE_INIT;
-	LoRaWAN.ifskipjoin();
+  deviceState = DEVICE_STATE_INIT;
+  LoRaWAN.ifskipjoin();
  Wire.begin();
   if(AHT10.begin(eAHT10Address_Low))
     Serial.println("Init AHT10 Sucess.");
@@ -124,50 +130,53 @@ void setup() {
 
 void loop()
 {
-	switch( deviceState )
-	{
-		case DEVICE_STATE_INIT:
-		{
+  switch( deviceState )
+  {
+    case DEVICE_STATE_INIT:
+    {
 #if(LORAWAN_DEVEUI_AUTO)
-			LoRaWAN.generateDeveuiByChipID();
+      LoRaWAN.generateDeveuiByChipID();
 #endif
 #if(AT_SUPPORT)
-			getDevParam();
+      getDevParam();
 #endif
-			printDevParam();
-			LoRaWAN.init(loraWanClass,loraWanRegion);
-			deviceState = DEVICE_STATE_JOIN;
-			break;
-		}
-		case DEVICE_STATE_JOIN:
-		{
-			LoRaWAN.join();
-			break;
-		}
-		case DEVICE_STATE_SEND:
-		{
-			prepareTxFrame( appPort );
-			LoRaWAN.send();
-			deviceState = DEVICE_STATE_CYCLE;
-			break;
-		}
-		case DEVICE_STATE_CYCLE:
-		{
-			// Schedule next packet transmission
-			txDutyCycleTime = appTxDutyCycle + randr( 0, APP_TX_DUTYCYCLE_RND );
-			LoRaWAN.cycle(txDutyCycleTime);
-			deviceState = DEVICE_STATE_SLEEP;
-			break;
-		}
-		case DEVICE_STATE_SLEEP:
-		{
-			LoRaWAN.sleep();
-			break;
-		}
-		default:
-		{
-			deviceState = DEVICE_STATE_INIT;
-			break;
-		}
-	}
+      printDevParam();
+      LoRaWAN.init(loraWanClass,loraWanRegion);
+      deviceState = DEVICE_STATE_JOIN;
+      break;
+    }
+    case DEVICE_STATE_JOIN:
+    {
+      LoRaWAN.join();
+      break;
+    }
+    case DEVICE_STATE_SEND:
+    {
+      prepareTxFrame( appPort );
+      LoRaWAN.send();
+      deviceState = DEVICE_STATE_CYCLE;
+      break;
+    }
+    case DEVICE_STATE_CYCLE:
+    {
+      // Schedule next packet transmission
+      txDutyCycleTime = appTxDutyCycle + randr( 0, APP_TX_DUTYCYCLE_RND );
+      LoRaWAN.cycle(txDutyCycleTime);
+      deviceState = DEVICE_STATE_SLEEP;
+      break;
+    }
+    case DEVICE_STATE_SLEEP:
+    {
+     // LoRaWAN.sleep();
+     // break;
+     Radio.IrqProcess();
+     LoRaWAN.sleep();
+     break;
+    }
+    default:
+    {
+      deviceState = DEVICE_STATE_INIT;
+      break;
+    }
+  }
 }
